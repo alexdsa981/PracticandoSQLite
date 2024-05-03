@@ -1,0 +1,311 @@
+-----------------------------------------------------------------------------------------------------------------------
+CARDINALIDAD:
+1:1 uno a uno
+n:m muchos a muchos (se debe crear una tabla intermedia, ej: ordenes y productos es n:m, por lo que debe existir un detalle_ordenes que intermedie y contenga sus datos relacionados)
+1:n uno a muchos
+n:1 muchos a uno
+-----------------------------------------------------------------------------------------------------------------------
+Para hacer comentarios se usa '--'
+
+primero se selecciona SELECT REGISTROS FROM TABLA
+se hace el filtrado de registros WHERE AND OR NOT = != > <
+se agrupa GROUP BY
+se hace el filtrado de grupos HAVING
+se ordena ORDER BY
+por ultimo se limita registros LIMIT
+
+WHERE no funciona con funciones de agregacion tales como avg(), sum(), etc. por lo que se debe usar HAVING en esos casos.
+WHERE filtra registros y HAVING filtra grupos
+No se puede aplicar 2 veces el filtro de agregacion ej: max(sum(...)) en una sola consulta
+--------------------------------------------------------------------------------------------------------------------------
+
+ORDER BY: "Ordena los registros como se le indique, puede ser ASC(ascendente), DESC(descendente) o 'random()'(aleatorio)"
+
+select * from Products
+where CategoryID != 1 
+order by random()
+
+select * from Products
+ORDER by CategoryID asc
+
+--------------------------------------------------------------------------------------------------------------------------
+
+LIMIT: "limita el numero de registros que se mostrarán en pantalla"
+"Mostrará siempre los mismos 5 debido al orden"
+select * from Products
+where CategoryID != 1 
+limit 5
+
+"Mostrará 5 randoms"
+select * from Products
+where CategoryID != 1 
+order by random()
+limit 5
+
+OFFSET: "se usa junto a limit para saltarte las n primeras consultas, ej:"
+select * from Products
+where CategoryID != 1 
+LIMIT 10 OFFSET 5
+"Saltará los 5 primeros resultados y mostrará los 10 siguientes"
+--------------------------------------------------------------------------------------------------------------------------
+
+DISTINTO VS NOT: "distinto (!=) es un operador de comparacion tal como (<,> =) y NOT es un operador logico tal como (AND, OR), estos se apoyan
+para llegar a un resultado"
+
+--------------------------------------------------------------------------------------------------------------------------
+BETWEEN: "selecciona desde un numero hasta otro, el primero debe ser menor al segundo, tambien se puede utilizar 'NOT BETWEEN', tambien funciona con fechas "
+
+select * from Products
+where Price BETWEEN 20 and 50
+
+select * from Employees
+where BirthDate BETWEEN "1960-01-01" and "1970-01-01"
+RESULTADO ->> 1968-12-08, 1963-08-30, 1963-07-02, etc
+--------------------------------------------------------------------------------------------------------------------------
+LIKE: "selecciona donde donde el Product name sea como se indique. Tambien se pueden usar guiones bajos por ejemplo '__a' esto indica
+que la palabra tiene 3 letras, la 1ra y 2da pueden ser cualquier letra y la 3ra debe ser obligatoriamente 'a', tambien se puede usar porcentajes
+por ejemplo '%a', esto indica que detras de la 'a' puede ir cualquier cantidad de letras o caracteres pero debe terminar en 'a', tambien se
+pueden combinar y usar en cualquier espacio, por ejemplo '_a%', este indica que la 2da letra obligatoriamente es 'a', pero despues puede ser cualquier cadena
+de palabras. se puede emplear 'NOT LIKE' "
+
+select * from Products
+where ProductName LIKE "chais"
+
+RESULTADO ->>>Chais
+
+select * from Products
+where ProductName LIKE "__a%"
+
+RESULTADO ->>> Chais, Chang, Grandma's Boysenberry Spread, Teatime Chocolate Biscuits, etc.
+--------------------------------------------------------------------------------------------------------------------------
+IS NULL: "selecciona donde el ProductName sea nulo o no tenga valor, tambien funciona con 'NOT NULL' para seleccionar
+ todos los registros con ese campo no nulos"
+
+select * from Products 
+where ProductName is NULL
+
+select * from Products 
+where ProductName is NOT NULL
+
+--------------------------------------------------------------------------------------------------------------------------
+
+IN: "abrevia OR y selecciona lo indicado, en este caso las CategoryID que sean 2, 5 y 6,
+además 'order by' ordena las categorias de forma ascendente. Tambien funciona con 'NOT IN' para hacer lo contrario "
+
+select * from Products 
+where CategoryID IN (2,5,6)
+order by CategoryID asc
+
+--------------------------------------------------------------------------------------------------------------------------
+
+COUNT(): "cuenta los numeros de registros que hay en una tabla"
+AS: "le da un nombre temporal a la cabecera del registro seleccionado"
+--select count(FirstName) as cantidad_nombres from Employees
+
+SUM(): "suma todos los datos de una fila"
+--select sum(Price) from Products
+
+AVG(): "devuelve el promedio de una fila"
+--select avg(Price) from Products
+RESULTADO ->> 27.4408641975309
+
+ROUND(): "Redondea un valor, tambien se le puede dar la cantidad de decimales que deseamos que redondee"
+--select ROUND(avg(Price)) from Products
+RESULTADO ->> 27.0
+--select ROUND(avg(Price), 2) from Products
+RESULTADO ->> 27.44
+
+MIN(): "Devuelve el valor más bajo" 
+select MIN(Price) from Products
+
+
+MIN(): "Devuelve el valor más alto" 
+
+select MAX(Price) from Products
+
+--------------------------------------------------------------------------------------------------------------------------
+
+GROUP BY:"Aqui se pide que agrupe segun el SupplierID y se aprovecha para tomar el promedio de cada uno, tambien se puede ver como
+se crea temporalmente PROMEDIO para no volver a repetir la formula de round(...). si no se pide promedio y se pide PRICE, este
+solo mostrará el primer registro de PRICE con el supplierID correspondiente, asi funcionará tambien con los demás registros"
+
+select SupplierID, round(avg(Price)) as PROMEDIO from Products 
+GROUP by SupplierID
+ORDER by PROMEDIO DESC
+
+--------------------------------------------------------------------------------------------------------------------------
+HAVING: "funciona como where (where no funciona con funciones de agregacion), pero este hace filtrado de grupos, no de registros. Va despues de GROUP BY.
+En este caso, PROMEDIO es el resultado de una funcion de agregacion por lo que es imposible usar WHERE y se usa HAVING"
+
+select SupplierID, round(avg(Price)) as PROMEDIO from Products 
+GROUP by SupplierID
+HAVING PROMEDIO > 40
+
+"Tambien se puede combinar con where, que hará filtrado de registros de un campo"
+select SupplierID, round(avg(Price)) as PROMEDIO from Products 
+WHERE ProductName IS NOT NULL
+GROUP by SupplierID
+HAVING PROMEDIO > 40
+
+--------------------------------------------------------------------------------------------------------------------------
+
+Subconsultas: "No alteran la base de datos, solo pueden mostrar datos, solo muestra una columna no tablas."
+ "Select (select nombre from tabla), nombre2 from tabla2", "Las columnas de fuera no se pueden solicitar a traves de un alias, ej ProductID as pID y luego
+llamar a pID dentro de la subconsulta, caso contrario a las tablas ej OrderDetails as OD y luego OD.ProductID = ..." 
+"Tambien se pueden usar en where ej WHERE (subconsulta) > 30"
+
+"Aqui tenemos que hacer referencia a la tabla de afuera de la subquery 'OrderDetails' dentro de la subquery para que se obtenga el ProductID de fuera e
+igualarlo al de adentro 'Products', para que así se muestre correctamente los datos, sino las subqueries solo mostrarán el primer dato de la tabla solicitada"
+
+SELECT ProductID, Quantity,
+ (SELECT ProductName FROM Products WHERE OrderDetails.ProductID = ProductID) as Nombre,
+ (SELECT Price FROM Products WHERE OrderDetails.ProductID = ProductID) as Precio
+ FROM OrderDetails
+
+"Usamos la subconsulta en un where pero utilizando un alias"
+SELECT ProductID, sum(Quantity) as total_vendido,
+(Select Price FROM Products WHERE ProductID = OD.ProductID) as Precio,
+(Select ProductName FROM Products WHERE ProductID = OD.ProductID) as nombre_producto,
+round((sum(Quantity) * (Select Price FROM Products WHERE ProductID = OD.ProductID))) as Total_Recaudado
+FROM OrderDetails as OD
+WHERE Precio > 40
+group by ProductID
+order by total_recaudado asc
+
+"Ordena y no muestra el precio debido a que lo usamos en where"
+SELECT ProductID, sum(Quantity) as total_vendido,
+(Select ProductName FROM Products WHERE ProductID = OD.ProductID) as nombre_producto,
+round((sum(Quantity) * (Select Price FROM Products WHERE ProductID = OD.ProductID))) as Total_Recaudado
+FROM OrderDetails as OD
+WHERE (Select Price FROM Products WHERE ProductID = OD.ProductID) > 40
+group by ProductID
+order by total_recaudado asc
+
+"Subconsultas dentro de una subconsulta dentro de una consulta"
+SELECT Precio FROM(
+SELECT ProductID, sum(Quantity) as total_vendido,
+(Select Price FROM Products WHERE ProductID = OD.ProductID) as Precio,
+(Select ProductName FROM Products WHERE ProductID = OD.ProductID) as nombre_producto,
+round((sum(Quantity) * (Select Price FROM Products WHERE ProductID = OD.ProductID))) as Total_Recaudado
+FROM OrderDetails as OD
+WHERE Precio > 40
+group by ProductID
+order by total_recaudado asc
+)
+
+"EJEMPLO MAS COMPLEJO (vendedores que vendieron mas que el promedio)"
+
+SELECT FirstName, LastName,
+(SELECT sum(od.Quantity) FROM Orders as o, OrderDetails as od
+WHERE o.EmployeeID = e.EmployeeID AND od.OrderID = o.OrderID) as unidades_totales
+FROM Employees as e
+WHERE unidades_totales > (SELECT avg(unidades_totales) FROM(
+SELECT (SELECT sum(od.Quantity) FROM Orders as o, OrderDetails as od
+WHERE o.EmployeeID = e2.EmployeeID AND od.OrderID = o.OrderID) as unidades_totales FROM Employees as e2
+GROUP BY e2.EmployeeID
+))
+--------------------------------------------------------------------------------------------------------------------------
+JOINS: "ESTOS EJEMPLOS MUESTRAN COMO INTERACTUAN LOS ID, MOSTRARÁ LOS ID TAL COMO SE EJEMPLIFICA Y LOS DATOS QUE POSEEN LAS FILAS, SI NO EXISTEN SE LLENARAN COMO NULL"
+
+-cross join: "se juntan todos con todos, ej: 'a,b,c' cross join '1,2' = 'a1,a2,b1,b2,c1,c2' "
+
+Select FirstName, Reward,Month from Employees e
+CROSS JOIN Rewards r 
+
+-inner join: "se juntan las coincidencias (lo del medio del conjunto), ej: 'a,b,c,d' inner join '1,2,c,f,d' = 'c,d' 
+esto se puede hacer con las coincidencias de id"
+
+Select FirstName, Reward,Month from Employees e
+INNER JOIN Rewards r ON  e.EmployeeID = r.EmployeeID
+
+
+-left/right join: "Muestra todos los datos de la primera(left) o segunda(right) tabla, incluyendo las coincidencias de la 2da tabla, ej: 'a,b,c,d,e' left join '1,2,c,a,3' = 'a,b,c,d,e' "
+
+Select FirstName, Reward,Month from Employees e
+LEFT JOIN Rewards r ON  e.EmployeeID = r.EmployeeID
+
+-full join: "une consultas que regresan una tabla, select * from tabla1 ... UNION select * from tabla2
+UNION regresa todas las filas pero omite las repetidas, UNION ALL regresa todas las filas incluyendo las repetidas
+ej: (a,b,c) UNION (a,1,b,3) = a,b,c,1,3
+ej: (a,b,c) UNION ALL (a,1,b,3) = a,b,c,a,1,b,3" 
+" 
+SELECT FirstName, Reward, Month FROM Employees e
+LEFT JOIN Rewards r on e.EmployeeID = r.EmployeeID
+UNION/UNION ALL
+SELECT FirstName, Reward, Month FROM Rewards r
+LEFT JOIN Employees e on e.EmployeeID = r.EmployeeID
+--------------------------------------------------------------------------------------------------------------------------
+INDICES: Mejora el rendimiento de las consultas, si se abusa de ellos puede consumir mucho espacio en disco. Recomendable usar en columnas que usamos para busquedas generales como where
+create index nombre_indice nombre_tabla (nombre_campo)
+
+Indices unicos: No permite crear un indice con el mismo valor
+create unique index nombre_indice nombre_tabla (nombre_campo)
+
+Indices unicos "mixtos":No permite crear crear un indice con los mismos valores o combinaciones, ej tenemos columna a y b a:Alex b:Saldaña, c:universidad 
+y quiero ingresar otra fila con los datos a:Alex b:Saldaña c:colegio. No me permitirá pq Alex Saldaña debe ser único
+create unique index nombre_indice nombre_tabla (nombre_campo, 2do_nombre_campo)
+
+--------------------------------------------------------------------------------------------------------------------------
+VISTAS: Permite llamar a una consulta que solo mostrará la tabla que le proporcionamos, no se le pueden meter datos de logica.
+
+CREAR VISTA
+CREATE VIEW Productos_simplificados AS
+SELECT ProductID, ProductName,Price FROM Products
+WHERE ProductID > 20
+ORDER BY ProductID DESC
+
+LLAMAR VISTA
+SELECT * FROM Productos_simplificados
+
+ELIMINAR VISTA (se utiliza IF EXISTS para que no de un error si es que la vista ya fue eliminada. es opcional y depende si no interrumpirá una consulta más grande)
+DROP VIEW IF EXISTS Productos_simplificados
+
+--------------------------------------------------------------------------------------------------------------------------
+
+BLOQUEOS: Mecanismo para poder manejar los accesos concurrentes a la base de datos, ej dos personas quieren modificar un campo al mismo tiempo, que consulta se realizará primero y cual segundo.
+
+TIPOS:
+-Shared Locks: nadie puede escribir, solo pueden leer.
+-reserved Locks: se aplica cuando alguien mas quiere leer o escribir. Se aplica cuando uno escribe en la base de datos.
+-bloqueo exclusivo: no permite leer ni escribir a los demás.
+
+
+TRANSACCIONES: se utiliza BEGIN; para empezar, luego la modificacion que haremos a la base de datos y para confirmar se hará un COMMIT. Si no se desea guardar y se quiere revertir se utiliza ROLLBACK.
+
+se inicia la transaccion temporal:
+BEGIN TRANSACTION;
+
+se realizan consultas en la transaccion abierta
+UPDATE Products SET ProductName = 'PRUEBA';
+
+por ahora la transaccion sigue abierta, podemos poner cualquier otra consulta.
+
+finalmente para cerrar la transaccion debemos utilizar COMMIT (para guardar) o ROLLBACK (para cancelar los cambio)
+
+--------------------------------------------------------------------------------------------------------------------------
+FUNCIONES DEFINIDAS POR EL USUARIO:
+PROCEDIMIENTOS ALMACENADOS:
+VER CONEXION A LA BASE DE DATOS DESDE PYTHON EN CURSOS/PYTHON/PYDB 
+EN DONDE SE UTILIZAN FUNCIONES CREADAS EN PYTHON EN LA BASE DE DATOS
+
+
+RETO DE VIDEO: "ENCONTRAR EL TOTAL RECAUDADO POR CADA EMPLEADO"
+SELECT 
+    Firstname || " " || LastName as Employee,
+    SUM(p.Price * od.Quantity) as Recaudado,
+    COUNT(DISTINCT o.OrderID) as NumOrdenes
+FROM 
+    Employees e
+JOIN 
+    Orders o ON e.EmployeeID = o.EmployeeID
+JOIN 
+    OrderDetails od ON od.OrderID = o.OrderID
+JOIN 
+    Products p ON p.ProductId = od.ProductID
+GROUP BY 
+    e.EmployeeID
+ORDER BY 
+    Recaudado DESC
+LIMIT 10;
+
+--------------------------------------------------------------------------------------------------------------------------
